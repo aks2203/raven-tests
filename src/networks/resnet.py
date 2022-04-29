@@ -85,7 +85,7 @@ class ResNet(nn.Module):
         out = F.avg_pool2d(out, 8)
         out = out.view(out.size(0), -1)
         out = self.linear(out)
-        return out
+        return out, None, None
 
 
 def resnet18():
