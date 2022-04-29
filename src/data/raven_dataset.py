@@ -37,7 +37,8 @@ class RAVENDataset(Dataset):
             self.cached_dir = os.path.join(self.cache_root, 'cache', f'{self.dataset_type}_{self.image_size}')
 
         if self.root is not None:
-            self.data_dir = os.path.join(self.root, 'data')
+            # self.data_dir = os.path.join(self.root, 'data')
+            self.data_dir = self.root
         else:
             self.data_dir = self.cached_dir
 

@@ -31,7 +31,7 @@ class MRNet(nn.Module):
         self.levels = levels
         print(f'CONTRAST: {self.do_contrast}')
         print(f'LEVELS: {self.levels}')
-
+        big = False
         if dropout:
             _dropout = {
                 'high': 0.1,
