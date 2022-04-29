@@ -20,6 +20,8 @@ parser.add_argument('--img_size', type=int, default=80)
 
 parser.add_argument('--seed', type=int, default=12345)
 parser.add_argument('--model_name', type=str, default='mrnet')
+parser.add_argument('--dt_width', type=int, default=128)
+parser.add_argument('--dt_iters', type=int, default=4)
 parser.add_argument('--r_func', type=str, default='dist')
 parser.add_argument('--contrast', dest='contrast', action='store_true')
 parser.add_argument('--levels', type=str, default='111')

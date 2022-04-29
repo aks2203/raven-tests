@@ -1,12 +1,17 @@
 import os
 import pickle
+import shutil
 
 import numpy as np
 import torch
 import torch.optim as optim
+import yaml
 from tqdm import tqdm
 
 import criteria
+from networks.dtnet import dt_net, dt_net_recall, dt_net_iq
+from networks.mrnet import MRNet
+from networks.resnet import resnet18, resnet34, resnet50, resnet101, resnet152
 from report_acc_regime import init_acc_regime, update_acc_regime
 
 torch.backends.cudnn.benchmark = True
@@ -36,14 +41,12 @@ class Trainer:
         else:
             if os.path.isdir(test_path):
                 print(f'Removing existing save directory at {test_path}')
-                import shutil
                 shutil.rmtree(test_path)
 
             print(f'Creating new save directory at {test_path}')
             os.makedirs(self.save_path)
             os.makedirs(self.log_path)
 
-            import yaml
             cfg_file = os.path.join(self.save_path, 'cfg.yml')
             with open(cfg_file, 'w') as f:
                 yaml.dump(args.__dict__, f, default_flow_style=False)
@@ -69,12 +72,26 @@ class Trainer:
         params['num_meta'] = 9 if 'RAVEN' in self.args.dataset else 12
         self.use_meta = 0 if args.meta_beta == 0 else params['num_meta']
 
-        assert args.model_name == 'mrnet'
-        from networks.mrnet import MRNet
-        self.model = MRNet(use_meta=self.use_meta, dropout=args.dropout, force_bias=args.force_bias,
-                           reduce_func=args.r_func, levels=args.levels, do_contrast=args.contrast,
-                           multihead=args.multihead)
-
+        if args.model_name == 'mrnet':
+            self.model = MRNet(use_meta=self.use_meta, dropout=args.dropout, force_bias=args.force_bias,
+                               reduce_func=args.r_func, levels=args.levels, do_contrast=args.contrast,
+                               multihead=args.multihead)
+        elif args.model_name == 'dt_net':
+            self.model = dt_net(args.dt_width, args.dt_iters)
+        elif args.model_name == 'dt_net_recall':
+            self.model = dt_net_recall(args.dt_width, args.dt_iters)
+        elif args.model_name == 'dt_net_iq':
+            self.model = dt_net_iq(args.dt_width, args.dt_iters)
+        elif args.model_name == 'resnet18':
+            self.model = resnet18()
+        elif args.model_name == 'resnet34':
+            self.model = resnet34()
+        elif args.model_name == 'resnet50':
+            self.model = resnet50()
+        elif args.model_name == 'resnet101':
+            self.model = resnet101()
+        elif args.model_name == 'resnet152':
+            self.model = resnet152()
         if self.args.cuda:
             self.model.cuda()
 
@@ -144,7 +161,8 @@ class Trainer:
                 if self.args.multihead_mode is None:
                     weights = [1 / len(model_output_heads)] * len(model_output_heads)
                 else:
-                    probs = [target_one_hot * output.detach().sigmoid() + (1 - target_one_hot) * (1 - output.detach().sigmoid())
+                    probs = [target_one_hot * output.detach().sigmoid() + (1 - target_one_hot) * (
+                                1 - output.detach().sigmoid())
                              for output in model_output_heads]
                     if self.args.multihead_mode == 'prob':
                         probs_sum = sum(probs)
@@ -452,7 +470,8 @@ class Trainer:
                 if epoch - best_val_acc_epoch >= self.args.early_stopping:
                     print(f'Early stopping exit: {epoch - best_val_acc_epoch} > {self.args.early_stopping}')
                     break
-                print(f"Early stopping countdown: {epoch - best_val_acc_epoch}/{self.args.early_stopping} (Best VAL: {best_val_acc:0.5f}, Best VAL TEST: {best_val_test_acc:0.5f}, Best TEST: {best_test_acc:0.5f})")
+                print(
+                    f"Early stopping countdown: {epoch - best_val_acc_epoch}/{self.args.early_stopping} (Best VAL: {best_val_acc:0.5f}, Best VAL TEST: {best_val_test_acc:0.5f}, Best TEST: {best_test_acc:0.5f})")
 
         print('Done Training')
         print(f'Best Validation Accuracy: {best_val_acc}')
